@@ -4,7 +4,7 @@ const { Server } = require("socket.io");
 const crypto = require("crypto");
 
 const app = express();
-app.get("/", (_req, res) => res.send("God'sgrace Ethics Football Battle multiplayer server is running."));
+app.use(express.static(__dirname));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 const httpServer = http.createServer(app);

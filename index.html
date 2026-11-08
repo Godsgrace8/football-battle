@@ -27,6 +27,7 @@ button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:14px 16p
 .result{text-align:center;padding:28px 10px}.trophy{font-size:65px}.resultscore{font-size:52px;font-weight:900;color:#ff625a}
 footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
 @media(max-width:480px){main{padding:17px}header{padding:17px}.player-art{height:130px}}
+.multiplayer{margin-top:16px;padding:16px;background:#111923;border:1px solid var(--line);border-radius:16px}.multiplayer .row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.multiplayer button{margin-top:9px}.status{font-size:13px;color:#aeb9c8;margin:10px 0}.voice-controls{display:flex;gap:8px;flex-wrap:wrap}.voice-controls button{width:auto;flex:1}.players{font-size:13px;color:#dce5ef;line-height:1.7}.danger-note{font-size:12px;color:#ffbf9c}
 </style>
 </head>
 <body><div class="app">
@@ -41,6 +42,17 @@ footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
 <section id="home" class="screen">
 <span class="tag">PLAYER LOBBY</span><h1>Welcome, <span id="playername" style="color:var(--red)">Player</span></h1><p>Ready to test your football knowledge?</p>
 <div class="question-card"><h2>⚽ Quick Quiz</h2><p>20 questions · 4 choices · one point per correct answer</p><button class="primary" onclick="begin()">START 20-QUESTION MATCH</button></div>
+<div class="multiplayer">
+<h2>🌍 Multiplayer lobby</h2>
+<p>Create a private room and share its code with one other player, or join a room with a code.</p>
+<button class="primary" onclick="createRoom()">CREATE PRIVATE ROOM</button>
+<div class="row"><input class="field" id="roomcode" maxlength="8" placeholder="ROOM CODE"><button class="ghost" onclick="joinRoom()">JOIN ROOM</button></div>
+<div class="status" id="netstatus">Connecting to multiplayer server…</div>
+<div class="players" id="players"></div>
+<div class="voice-controls"><button class="ghost" id="voicebtn" onclick="toggleVoice()" disabled>🎙️ Start voice</button><button class="ghost" id="mutebtn" onclick="toggleMute()" disabled>🔇 Mute</button></div>
+<p class="danger-note">Voice chat is optional. Only enable your microphone when you are comfortable speaking with the other player. Avoid sharing personal information.</p>
+<button class="primary" id="startonline" onclick="startOnlineMatch()" disabled>START ONLINE QUIZ</button>
+</div>
 <div class="notice">Question selection is randomized. Questions won't repeat within a match, and the quiz avoids repeating questions across your played matches on this device until the available bank has been used.</div>
 <button class="ghost" onclick="logout()">Sign out</button>
 </section>
@@ -51,7 +63,11 @@ footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
 </section>
 <section id="result" class="screen result"><div class="trophy">🏆</div><span class="tag">MATCH COMPLETE</span><h1>Full time!</h1><div class="resultscore" id="finalscore">0/20</div><p id="resultmessage"></p><button class="primary" onclick="show('home')">BACK TO LOBBY</button><button class="ghost" onclick="begin()">PLAY ANOTHER MATCH</button></section>
 </main><footer>GOD'SGRACE ETHICS · FOOTBALL BATTLE</footer></div>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 <script>
+const SERVER_URL="https://football-battle-server.onrender.com";
+let socket=null,roomCode=null,localStream=null,peer=null,muted=false,voiceWanted=false,onlinePlayers=[];
+const rtcConfig={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
 const BANK=[
 {c:"WORLD CUP",q:"Which country won the 2022 FIFA World Cup?",a:"Argentina",o:["France","Brazil","Argentina","Germany"]},
 {c:"CLUBS",q:"Which club is nicknamed the Red Devils?",a:"Manchester United",o:["Liverpool","Manchester United","Arsenal","Chelsea"]},
@@ -138,7 +154,20 @@ let userEmail='',questions=[],qi=0,points=0,answered=false,used=new Set();
 const $=id=>document.getElementById(id);
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
 $('loginform').addEventListener('submit',e=>{e.preventDefault();userEmail=$('email').value.trim();localStorage.setItem('gefb_email',userEmail);$('playername').textContent=userEmail.split('@')[0].slice(0,18);$('shortname').textContent=userEmail.split('@')[0].slice(0,10);show('home')});
-function logout(){localStorage.removeItem('gefb_email');show('login')}
+function logout(){stopVoice();if(socket)socket.disconnect();localStorage.removeItem('gefb_email');show('login')}
+function setNetStatus(t){$('netstatus').textContent=t}
+function connectServer(){if(socket&&socket.connected)return;socket=io(SERVER_URL,{transports:['websocket','polling']});socket.on('connect',()=>{setNetStatus('Connected to multiplayer server.');socket.emit('player:name',userEmail.split('@')[0]||'Player')});socket.on('connect_error',()=>setNetStatus('Could not connect. Check your internet and try again.'));socket.on('disconnect',()=>setNetStatus('Disconnected from server.'));socket.on('room:created',d=>{roomCode=d.roomCode;$('roomcode').value=roomCode;setNetStatus('Room created. Share code '+roomCode+' with one friend.')});socket.on('room:joined',d=>{roomCode=d.roomCode;setNetStatus('Joined room '+roomCode+'. Waiting for the other player…')});socket.on('room:error',m=>setNetStatus(m));socket.on('match:waiting',()=>setNetStatus('Searching for an opponent…'));socket.on('match:found',d=>{roomCode=d.roomCode;setNetStatus('Opponent found! Room '+roomCode)});socket.on('match:ready',d=>{roomCode=d.roomCode;onlinePlayers=d.players||[];renderPlayers();if(onlinePlayers.length===2){$('startonline').disabled=false;$('voicebtn').disabled=false;setNetStatus('Both players are in. You can start the quiz or enable voice chat.');maybeCreateOffer()}});socket.on('players:update',p=>{onlinePlayers=p;renderPlayers()});socket.on('match:opponent-left',()=>{setNetStatus('The other player left the room.');onlinePlayers=[];renderPlayers();$('startonline').disabled=true;$('voicebtn').disabled=true;stopVoice()});socket.on('match:start',()=>{setNetStatus('Online quiz started! Your scores will sync.')});socket.on('voice:signal',async msg=>{try{await handleSignal(msg.data)}catch(e){console.error(e);setNetStatus('Voice connection could not be established.')}})}
+function renderPlayers(){ $('players').textContent=onlinePlayers.length?onlinePlayers.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('  |  '):'No players in this room yet.' }
+function createRoom(){connectServer();if(socket.connected)socket.emit('room:create');else socket.once('connect',()=>socket.emit('room:create'))}
+function joinRoom(){const code=$('roomcode').value.trim().toUpperCase();if(!code){setNetStatus('Enter a room code first.');return}connectServer();const send=()=>socket.emit('room:join',code);if(socket.connected)send();else socket.once('connect',send)}
+function startOnlineMatch(){if(!roomCode||onlinePlayers.length!==2)return;socket.emit('match:start');begin()}
+async function toggleVoice(){if(!roomCode){setNetStatus('Join a room with another player first.');return}if(localStream){stopVoice();return}try{localStream=await navigator.mediaDevices.getUserMedia({audio:true});voiceWanted=true;$('voicebtn').textContent='🎙️ Stop voice';$('mutebtn').disabled=false;setNetStatus('Microphone on. Waiting for peer audio…');if(peer){localStream.getTracks().forEach(t=>peer.addTrack(t,localStream))}await maybeCreateOffer()}catch(e){setNetStatus('Microphone permission was not granted, or no microphone is available.')}}
+function toggleMute(){if(!localStream)return;muted=!muted;localStream.getAudioTracks().forEach(t=>t.enabled=!muted);$('mutebtn').textContent=muted?'🔊 Unmute':'🔇 Mute'}
+function stopVoice(){if(localStream)localStream.getTracks().forEach(t=>t.stop());localStream=null;voiceWanted=false;muted=false;if(peer){peer.close();peer=null}$('voicebtn').textContent='🎙️ Start voice';$('mutebtn').textContent='🔇 Mute';$('mutebtn').disabled=true}
+function ensurePeer(){if(peer)return peer;peer=new RTCPeerConnection(rtcConfig);peer.onicecandidate=e=>{if(e.candidate&&socket)socket.emit('voice:signal',{candidate:e.candidate})};peer.ontrack=e=>{let audio=$('remoteaudio');if(!audio){audio=document.createElement('audio');audio.id='remoteaudio';audio.autoplay=true;audio.playsInline=true;document.body.appendChild(audio)}audio.srcObject=e.streams[0]};if(localStream)localStream.getTracks().forEach(t=>peer.addTrack(t,localStream));return peer}
+async function maybeCreateOffer(){if(voiceWanted&&socket&&onlinePlayers.length===2&&socket.id<onlinePlayers.find(p=>p.id!==socket.id)?.id)await makeOffer()}
+async function makeOffer(){const pc=ensurePeer();const offer=await pc.createOffer();await pc.setLocalDescription(offer);socket.emit('voice:signal',{description:pc.localDescription})}
+async function handleSignal(data){const pc=ensurePeer();if(data.description){await pc.setRemoteDescription(data.description);if(data.description.type==='offer'){const answer=await pc.createAnswer();await pc.setLocalDescription(answer);socket.emit('voice:signal',{description:pc.localDescription})}}else if(data.candidate){await pc.addIceCandidate(data.candidate)}}
 function begin(){
  if(BANK.length<20){alert('Question bank needs at least 20 questions.');return}
  // Avoid repeats across matches on this device until the bank is exhausted.
@@ -151,7 +180,7 @@ function begin(){
 function draw(){
  answered=false;let q=questions[qi];$('qcount').textContent=`QUESTION ${qi+1} / 20`;$('scoretop').textContent=`SCORE ${points}`;$('correctcount').textContent=points;$('remaining').textContent=20-qi;$('bar').style.width=(qi/20*100)+'%';$('category').textContent=q.c;$('question').textContent=q.q;$('feedback').textContent='';$('next').style.display='none';let options=[...q.o].sort(()=>Math.random()-.5),box=$('answers');box.innerHTML='';options.forEach((a,i)=>{let b=document.createElement('button');b.className='answer';b.innerHTML=`<span class="letter">${String.fromCharCode(65+i)}</span><span>${a}</span>`;b.onclick=()=>pick(b,a,q.a);box.appendChild(b)})
 }
-function pick(btn,a,correct){if(answered)return;answered=true;document.querySelectorAll('.answer').forEach(b=>{b.disabled=true;if(b.innerText.trim().endsWith(correct)||b.textContent.trim()===correct)b.classList.add('correct')});if(a===correct){points++;$('feedback').textContent='✓ Correct answer! +1 point';$('feedback').style.color='var(--green)'}else{btn.classList.add('wrong');$('feedback').textContent='✕ Correct answer: '+correct;$('feedback').style.color='#ff8983'}$('scoretop').textContent=`SCORE ${points}`;$('correctcount').textContent=points;$('next').style.display='block';$('next').textContent=qi===19?'VIEW FINAL SCORE →':'NEXT QUESTION →'}
+function pick(btn,a,correct){if(answered)return;answered=true;document.querySelectorAll('.answer').forEach(b=>{b.disabled=true;if(b.innerText.trim().endsWith(correct)||b.textContent.trim()===correct)b.classList.add('correct')});if(a===correct){points++;$('feedback').textContent='✓ Correct answer! +1 point';$('feedback').style.color='var(--green)'}else{btn.classList.add('wrong');$('feedback').textContent='✕ Correct answer: '+correct;$('feedback').style.color='#ff8983'}$('scoretop').textContent=`SCORE ${points}`;$('correctcount').textContent=points;if(socket&&roomCode)socket.emit('score:update',points);$('next').style.display='block';$('next').textContent=qi===19?'VIEW FINAL SCORE →':'NEXT QUESTION →'}
 function nextQ(){qi++;if(qi<20)draw();else{$('bar').style.width='100%';$('finalscore').textContent=points+'/20';$('resultmessage').textContent=points>=16?'Outstanding football knowledge!':points>=11?'Solid performance. Keep it up!':'Good effort—train and come back stronger!';show('result')}}
-window.addEventListener('load',()=>{let saved=localStorage.getItem('gefb_email');if(saved){userEmail=saved;$('playername').textContent=saved.split('@')[0].slice(0,18);$('shortname').textContent=saved.split('@')[0].slice(0,10);show('home')}})
+window.addEventListener('load',()=>{connectServer();let saved=localStorage.getItem('gefb_email');if(saved){userEmail=saved;$('playername').textContent=saved.split('@')[0].slice(0,18);$('shortname').textContent=saved.split('@')[0].slice(0,10);show('home')}})
 </script></body></html>
