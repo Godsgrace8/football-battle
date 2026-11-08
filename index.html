@@ -34,10 +34,9 @@ footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
 <header><div class="brandmark">G<span><b>E</b></span></div><div><div class="brand">GOD'SGRACE <span>ETHICS</span></div><small>FOOTBALL BATTLE · QUIZ ARENA</small></div></header>
 <main>
 <section id="login" class="screen active">
-<span class="tag">WELCOME TO THE ARENA</span><h1>Know football.<br><span style="color:var(--red)">Own the battle.</span></h1>
-<p>Sign in with your email to enter the quiz arena. This preview keeps your session on this device.</p>
-<form class="form" id="loginform"><input class="field" type="email" id="email" placeholder="Your email address" autocomplete="email" required><button class="primary">CONTINUE TO GAME →</button></form>
-<div class="notice"><b>Preview notice:</b> Email sign-in here is a demo interface, not verified account authentication. A secure login needs a backend/auth provider before public launch.</div>
+ <span class="tag">TELEGRAM PLAYER SIGN-IN</span><h1>Know football.<br><span style="color:var(--red)">Own the battle.</span></h1>
+ <p id="authmessage">Open this game from its Telegram bot to verify your Telegram account and enter the arena.</p>
+ <div class="notice" id="authnotice">Your Telegram identity will be verified by the game server. No email or password is required.</div>
 </section>
 <section id="home" class="screen">
 <span class="tag">PLAYER LOBBY</span><h1>Welcome, <span id="playername" style="color:var(--red)">Player</span></h1><p>Ready to test your football knowledge?</p>
@@ -63,10 +62,12 @@ footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
 </section>
 <section id="result" class="screen result"><div class="trophy">🏆</div><span class="tag">MATCH COMPLETE</span><h1>Full time!</h1><div class="resultscore" id="finalscore">0/20</div><p id="resultmessage"></p><button class="primary" onclick="show('home')">BACK TO LOBBY</button><button class="ghost" onclick="begin()">PLAY ANOTHER MATCH</button></section>
 </main><footer>GOD'SGRACE ETHICS · FOOTBALL BATTLE</footer></div>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 <script>
 const SERVER_URL="https://football-battle-server.onrender.com";
 let socket=null,roomCode=null,localStream=null,peer=null,muted=false,voiceWanted=false,onlinePlayers=[];
+let player=null,authToken='';
 const rtcConfig={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
 const BANK=[
 {c:"WORLD CUP",q:"Which country won the 2022 FIFA World Cup?",a:"Argentina",o:["France","Brazil","Argentina","Germany"]},
@@ -153,10 +154,43 @@ const BANK=[
 let userEmail='',questions=[],qi=0,points=0,answered=false,used=new Set();
 const $=id=>document.getElementById(id);
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
-$('loginform').addEventListener('submit',e=>{e.preventDefault();userEmail=$('email').value.trim();localStorage.setItem('gefb_email',userEmail);$('playername').textContent=userEmail.split('@')[0].slice(0,18);$('shortname').textContent=userEmail.split('@')[0].slice(0,10);show('home')});
-function logout(){stopVoice();if(socket)socket.disconnect();localStorage.removeItem('gefb_email');show('login')}
+function playerLabel(){return player?.username ? '@'+player.username : (player?.firstName || 'Player')}
+async function authenticateTelegram(){
+ const tg=window.Telegram?.WebApp;
+ if(!tg || !tg.initData){
+  $('authmessage').textContent='Telegram login data was not found.';
+  $('authnotice').textContent='Please open the game using the Start Game button in the official Telegram bot. Opening this page in a normal browser cannot verify your identity.';
+  return;
+ }
+ tg.ready();
+ tg.expand();
+ $('authmessage').textContent='Verifying your Telegram account…';
+ $('authnotice').textContent='Please wait while the game server securely checks your Telegram login.';
+ try{
+  const response=await fetch(SERVER_URL+'/api/auth/telegram',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({initData:tg.initData})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok || !data.token || !data.player) throw new Error(data.error || 'Telegram verification failed. Please try again.');
+  authToken=data.token;
+  player=data.player;
+  userEmail=player.username ? '@'+player.username : (player.firstName || 'Telegram Player');
+  $('playername').textContent=playerLabel().slice(0,18);
+  $('shortname').textContent=playerLabel().slice(0,10);
+  $('authmessage').textContent='Telegram account verified. Welcome to the arena!';
+  $('authnotice').textContent='Signed in as '+playerLabel()+'.';
+  show('home');
+  connectServer();
+ }catch(error){
+  $('authmessage').textContent='Could not sign you in.';
+  $('authnotice').textContent=error.message+' The server must support POST /api/auth/telegram and return {token, player}.';
+ }
+}
+function logout(){stopVoice();if(socket)socket.disconnect();socket=null;authToken='';player=null;userEmail='';show('login');$('authmessage').textContent='You have signed out.';$('authnotice').textContent='Close and reopen the game from Telegram to sign in again.'}
 function setNetStatus(t){$('netstatus').textContent=t}
-function connectServer(){if(socket&&socket.connected)return;socket=io(SERVER_URL,{transports:['websocket','polling']});socket.on('connect',()=>{setNetStatus('Connected to multiplayer server.');socket.emit('player:name',userEmail.split('@')[0]||'Player')});socket.on('connect_error',()=>setNetStatus('Could not connect. Check your internet and try again.'));socket.on('disconnect',()=>setNetStatus('Disconnected from server.'));socket.on('room:created',d=>{roomCode=d.roomCode;$('roomcode').value=roomCode;setNetStatus('Room created. Share code '+roomCode+' with one friend.')});socket.on('room:joined',d=>{roomCode=d.roomCode;setNetStatus('Joined room '+roomCode+'. Waiting for the other player…')});socket.on('room:error',m=>setNetStatus(m));socket.on('match:waiting',()=>setNetStatus('Searching for an opponent…'));socket.on('match:found',d=>{roomCode=d.roomCode;setNetStatus('Opponent found! Room '+roomCode)});socket.on('match:ready',d=>{roomCode=d.roomCode;onlinePlayers=d.players||[];renderPlayers();if(onlinePlayers.length===2){$('startonline').disabled=false;$('voicebtn').disabled=false;setNetStatus('Both players are in. You can start the quiz or enable voice chat.');maybeCreateOffer()}});socket.on('players:update',p=>{onlinePlayers=p;renderPlayers()});socket.on('match:opponent-left',()=>{setNetStatus('The other player left the room.');onlinePlayers=[];renderPlayers();$('startonline').disabled=true;$('voicebtn').disabled=true;stopVoice()});socket.on('match:start',()=>{setNetStatus('Online quiz started! Your scores will sync.')});socket.on('voice:signal',async msg=>{try{await handleSignal(msg.data)}catch(e){console.error(e);setNetStatus('Voice connection could not be established.')}})}
+function connectServer(){if(socket&&socket.connected)return;if(!authToken){setNetStatus('Sign in through Telegram first.');return}socket=io(SERVER_URL,{transports:['websocket','polling'],auth:{token:authToken}});socket.on('connect',()=>{setNetStatus('Connected to multiplayer server.');socket.emit('player:name',playerLabel())});socket.on('connect_error',()=>setNetStatus('Could not connect. Check your internet and try again.'));socket.on('disconnect',()=>setNetStatus('Disconnected from server.'));socket.on('room:created',d=>{roomCode=d.roomCode;$('roomcode').value=roomCode;setNetStatus('Room created. Share code '+roomCode+' with one friend.')});socket.on('room:joined',d=>{roomCode=d.roomCode;setNetStatus('Joined room '+roomCode+'. Waiting for the other player…')});socket.on('room:error',m=>setNetStatus(m));socket.on('match:waiting',()=>setNetStatus('Searching for an opponent…'));socket.on('match:found',d=>{roomCode=d.roomCode;setNetStatus('Opponent found! Room '+roomCode)});socket.on('match:ready',d=>{roomCode=d.roomCode;onlinePlayers=d.players||[];renderPlayers();if(onlinePlayers.length===2){$('startonline').disabled=false;$('voicebtn').disabled=false;setNetStatus('Both players are in. You can start the quiz or enable voice chat.');maybeCreateOffer()}});socket.on('players:update',p=>{onlinePlayers=p;renderPlayers()});socket.on('match:opponent-left',()=>{setNetStatus('The other player left the room.');onlinePlayers=[];renderPlayers();$('startonline').disabled=true;$('voicebtn').disabled=true;stopVoice()});socket.on('match:start',()=>{setNetStatus('Online quiz started! Your scores will sync.')});socket.on('voice:signal',async msg=>{try{await handleSignal(msg.data)}catch(e){console.error(e);setNetStatus('Voice connection could not be established.')}})}
 function renderPlayers(){ $('players').textContent=onlinePlayers.length?onlinePlayers.map((p,i)=>`${i+1}. ${p.name} — ${p.score} points`).join('  |  '):'No players in this room yet.' }
 function createRoom(){connectServer();if(socket.connected)socket.emit('room:create');else socket.once('connect',()=>socket.emit('room:create'))}
 function joinRoom(){const code=$('roomcode').value.trim().toUpperCase();if(!code){setNetStatus('Enter a room code first.');return}connectServer();const send=()=>socket.emit('room:join',code);if(socket.connected)send();else socket.once('connect',send)}
@@ -182,5 +216,5 @@ function draw(){
 }
 function pick(btn,a,correct){if(answered)return;answered=true;document.querySelectorAll('.answer').forEach(b=>{b.disabled=true;if(b.innerText.trim().endsWith(correct)||b.textContent.trim()===correct)b.classList.add('correct')});if(a===correct){points++;$('feedback').textContent='✓ Correct answer! +1 point';$('feedback').style.color='var(--green)'}else{btn.classList.add('wrong');$('feedback').textContent='✕ Correct answer: '+correct;$('feedback').style.color='#ff8983'}$('scoretop').textContent=`SCORE ${points}`;$('correctcount').textContent=points;if(socket&&roomCode)socket.emit('score:update',points);$('next').style.display='block';$('next').textContent=qi===19?'VIEW FINAL SCORE →':'NEXT QUESTION →'}
 function nextQ(){qi++;if(qi<20)draw();else{$('bar').style.width='100%';$('finalscore').textContent=points+'/20';$('resultmessage').textContent=points>=16?'Outstanding football knowledge!':points>=11?'Solid performance. Keep it up!':'Good effort—train and come back stronger!';show('result')}}
-window.addEventListener('load',()=>{connectServer();let saved=localStorage.getItem('gefb_email');if(saved){userEmail=saved;$('playername').textContent=saved.split('@')[0].slice(0,18);$('shortname').textContent=saved.split('@')[0].slice(0,10);show('home')}})
+window.addEventListener('load',()=>{authenticateTelegram()})
 </script></body></html>
