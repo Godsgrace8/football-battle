@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const crypto = require("crypto");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 // Allow the Telegram Mini App (and browser preflight requests) to call this API.
@@ -15,11 +16,40 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "32kb" }));
 app.use(express.static(__dirname));
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/health", (_req, res) => res.json({
+  ok: true,
+  databaseConfigured: Boolean(supabase)
+}));
+
+function requireSession(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const session = token ? sessions.get(token) : null;
+  if (!session || session.expiresAt <= Date.now()) {
+    if (token) sessions.delete(token);
+    return res.status(401).json({ error: "Please sign in again through Telegram." });
+  }
+  req.telegramPlayer = session.player;
+  next();
+}
+
+function requireDatabase(res) {
+  if (!supabase) {
+    res.status(503).json({ error: "Supabase is not configured. Check the Render environment variables." });
+    return false;
+  }
+  return true;
+}
 
 // Telegram BotFather token must be configured as TELEGRAM_BOT_TOKEN
 // in your Render environment variables. Never put the token in this file.
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+// Keep this server-side key only in Render. Never expose it in frontend code.
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
+const supabase = SUPABASE_URL && SUPABASE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } })
+  : null;
 const TELEGRAM_MAX_AGE_SECONDS = 24 * 60 * 60;
 const SESSION_LIFETIME_MS = 12 * 60 * 60 * 1000;
 const sessions = new Map();
@@ -100,12 +130,28 @@ function displayName(user) {
   return (user.username ? `@${user.username}` : name) || "Telegram Player";
 }
 
-app.post("/api/auth/telegram", (req, res) => {
+app.post("/api/auth/telegram", async (req, res) => {
   try {
     const player = verifyTelegramInitData(req.body && req.body.initData);
+    if (!requireDatabase(res)) return;
+
+    const display = displayName(player);
+    const { error: playerError } = await supabase
+      .from("players")
+      .upsert({
+        telegram_id: player.id,
+        username: player.username || null,
+        display_name: display
+      }, { onConflict: "telegram_id" });
+    if (playerError) throw playerError;
+
+    const { error: walletError } = await supabase
+      .from("wallets")
+      .upsert({ telegram_id: player.id }, { onConflict: "telegram_id", ignoreDuplicates: true });
+    if (walletError) throw walletError;
+
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = Date.now() + SESSION_LIFETIME_MS;
-
     sessions.set(token, { player, expiresAt });
     res.json({
       token,
@@ -118,13 +164,52 @@ app.post("/api/auth/telegram", (req, res) => {
       }
     });
   } catch (error) {
-    const status = error.status || 401;
+    console.error("Telegram/Supabase authentication error:", error.message);
+    const status = error.status || (error.code ? 503 : 401);
     res.status(status).json({
-      error: status === 503
-        ? error.message
-        : (error.message || "Telegram authentication failed.")
+      error: status === 401
+        ? (error.message || "Telegram authentication failed.")
+        : "Could not save your player profile. Please try again later."
     });
   }
+});
+
+// Authenticated, read-only player data endpoints. Wallet changes must be
+// implemented as server-verified transactions, never as client balance edits.
+app.get("/api/me", requireSession, async (req, res) => {
+  if (!requireDatabase(res)) return;
+  const { data, error } = await supabase.from("players").select(
+    "telegram_id, username, display_name, avatar_url, total_score, games_played, games_won, created_at"
+  ).eq("telegram_id", req.telegramPlayer.id).maybeSingle();
+  if (error) return res.status(500).json({ error: "Could not load player profile." });
+  res.json({ player: data });
+});
+
+app.get("/api/wallet", requireSession, async (req, res) => {
+  if (!requireDatabase(res)) return;
+  const { data, error } = await supabase.from("wallets")
+    .select("telegram_id, coin_balance, updated_at")
+    .eq("telegram_id", req.telegramPlayer.id).maybeSingle();
+  if (error) return res.status(500).json({ error: "Could not load wallet." });
+  res.json({ wallet: data });
+});
+
+app.get("/api/leaderboard", async (_req, res) => {
+  if (!requireDatabase(res)) return;
+  const { data, error } = await supabase.from("players")
+    .select("telegram_id, username, display_name, total_score, games_played, games_won")
+    .order("total_score", { ascending: false }).limit(50);
+  if (error) return res.status(500).json({ error: "Could not load leaderboard." });
+  res.json({ players: data || [] });
+});
+
+app.get("/api/tournaments", async (_req, res) => {
+  if (!requireDatabase(res)) return;
+  const { data, error } = await supabase.from("tournaments")
+    .select("id, name, description, entry_fee, prize_coins, max_players, status, starts_at, created_at")
+    .order("created_at", { ascending: false }).limit(100);
+  if (error) return res.status(500).json({ error: "Could not load tournaments." });
+  res.json({ tournaments: data || [] });
 });
 
 // Remove expired login sessions periodically.
