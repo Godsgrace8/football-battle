@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>God'sgrace Ethics | Football Battle</title>
+<style>
+:root{--red:#ef4038;--red2:#b91f29;--bg:#090c11;--panel:#151b24;--panel2:#202936;--line:#303b4b;--white:#f5f7fb;--muted:#9ba8b8;--green:#35c879}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#1b2938 0,#090c11 58%);color:var(--white);font:16px Inter,system-ui,Arial;min-height:100vh;padding:18px;display:grid;place-items:center}
+.app{width:min(100%,720px);border:1px solid #293442;background:#0e131aee;border-radius:24px;overflow:hidden;box-shadow:0 25px 80px #0009}
+header{padding:22px 25px;background:linear-gradient(115deg,#141b25,#291114);border-bottom:2px solid var(--red);display:flex;align-items:center;gap:14px}
+.brandmark{width:48px;height:48px;border-radius:14px;background:#050607;border:1px solid #424954;display:grid;place-items:center;font-weight:900;font-size:22px;letter-spacing:-4px;padding-right:4px}.brandmark b{color:var(--red)}
+.brand{font-size:12px;letter-spacing:2px;font-weight:900}.brand span{color:var(--red)}header small{display:block;color:#aeb7c4;margin-top:4px}
+main{padding:24px}.screen{display:none}.screen.active{display:block}
+h1{font-size:clamp(26px,5vw,39px);margin:0 0 8px;letter-spacing:-1px}h2{margin:0 0 12px}p{color:var(--muted);line-height:1.55}
+.tag{display:inline-block;color:#ffb5b0;background:#3a171b;border:1px solid #68252b;padding:6px 10px;border-radius:99px;font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:12px}
+.form{display:grid;gap:12px;margin-top:22px}.field{width:100%;padding:15px 16px;border:1px solid var(--line);background:#0b1016;color:white;border-radius:12px;font:inherit;outline:none}.field:focus{border-color:var(--red)}
+button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:14px 16px;cursor:pointer}.primary{background:linear-gradient(135deg,var(--red),var(--red2));color:white;width:100%;box-shadow:0 8px 24px #ef403826}.ghost{background:#222b37;color:white;border:1px solid #344253;width:100%;margin-top:10px}.small{font-size:12px;color:#8491a2}.notice{padding:12px 14px;background:#171f29;border:1px solid #2e3b4b;border-radius:12px;color:#aeb9c8;font-size:13px;line-height:1.5;margin-top:14px}
+.topline{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:13px;margin-bottom:12px}.progress{height:7px;background:#29313d;border-radius:20px;overflow:hidden;margin:0 0 20px}.bar{height:100%;background:linear-gradient(90deg,var(--red),#ff8b57);width:0%;transition:width .25s}
+.question-card{background:linear-gradient(145deg,#19212c,#111720);border:1px solid var(--line);border-radius:18px;padding:20px}
+.player-art{height:160px;border-radius:14px;margin-bottom:18px;background:radial-gradient(circle at 50% 35%,#3e526a,#17202b 65%,#0e141b);display:grid;place-items:center;position:relative;overflow:hidden}
+.player-art:before{content:"";position:absolute;width:160px;height:160px;border-radius:50%;border:1px solid #ffffff15}
+.player-art .sil{font-size:76px;filter:drop-shadow(0 8px 10px #0008)}
+.player-art .caption{position:absolute;bottom:10px;left:12px;font-size:10px;letter-spacing:2px;color:#aab6c5;font-weight:900}
+#question{font-size:clamp(19px,4vw,25px);font-weight:800;line-height:1.35;margin:0 0 17px}
+.answers{display:grid;gap:10px}.answer{background:#242e3b;color:#eef3fa;border:1px solid #354354;text-align:left;width:100%;display:flex;align-items:center;gap:12px}.answer .letter{width:28px;height:28px;border-radius:8px;background:#121821;display:grid;place-items:center;color:#9eabba;font-size:12px}.answer:hover:not(:disabled){border-color:#e94a43;background:#2b303b}.answer.correct{background:#143c2b;border-color:var(--green)}.answer.wrong{background:#4b2024;border-color:var(--red)}.answer:disabled{cursor:default}
+#feedback{min-height:26px;font-weight:800;margin:13px 0 0}.scoreline{display:flex;gap:10px;margin-bottom:16px}.pill{background:#1e2834;border:1px solid #303d4d;border-radius:10px;padding:9px 12px;font-size:13px;flex:1;text-align:center}.pill strong{color:white}
+.result{text-align:center;padding:28px 10px}.trophy{font-size:65px}.resultscore{font-size:52px;font-weight:900;color:#ff625a}
+footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
+@media(max-width:480px){main{padding:17px}header{padding:17px}.player-art{height:130px}}
+</style>
+</head>
+<body><div class="app">
+<header><div class="brandmark">G<span><b>E</b></span></div><div><div class="brand">GOD'SGRACE <span>ETHICS</span></div><small>FOOTBALL BATTLE · QUIZ ARENA</small></div></header>
+<main>
+<section id="login" class="screen active">
+<span class="tag">WELCOME TO THE ARENA</span><h1>Know football.<br><span style="color:var(--red)">Own the battle.</span></h1>
+<p>Sign in with your email to enter the quiz arena. This preview keeps your session on this device.</p>
+<form class="form" id="loginform"><input class="field" type="email" id="email" placeholder="Your email address" autocomplete="email" required><button class="primary">CONTINUE TO GAME →</button></form>
+<div class="notice"><b>Preview notice:</b> Email sign-in here is a demo interface, not verified account authentication. A secure login needs a backend/auth provider before public launch.</div>
+</section>
+<section id="home" class="screen">
+<span class="tag">PLAYER LOBBY</span><h1>Welcome, <span id="playername" style="color:var(--red)">Player</span></h1><p>Ready to test your football knowledge?</p>
+<div class="question-card"><h2>⚽ Quick Quiz</h2><p>20 questions · 4 choices · one point per correct answer</p><button class="primary" onclick="begin()">START 20-QUESTION MATCH</button></div>
+<div class="notice">Question selection is randomized. Questions won't repeat within a match, and the quiz avoids repeating questions across your played matches on this device until the available bank has been used.</div>
+<button class="ghost" onclick="logout()">Sign out</button>
+</section>
+<section id="quiz" class="screen">
+<div class="topline"><span id="qcount">QUESTION 1 / 20</span><span id="scoretop">SCORE 0</span></div><div class="progress"><div class="bar" id="bar"></div></div>
+<div class="scoreline"><div class="pill">Correct <strong id="correctcount">0</strong></div><div class="pill">Remaining <strong id="remaining">20</strong></div><div class="pill">Player <strong id="shortname">You</strong></div></div>
+<div class="question-card"><div class="player-art"><div class="sil">⚽</div><div class="caption" id="category">FOOTBALL TRIVIA</div></div><h2 id="question"></h2><div class="answers" id="answers"></div><div id="feedback"></div><button id="next" class="primary" style="display:none;margin-top:15px" onclick="nextQ()">NEXT QUESTION →</button></div>
+</section>
+<section id="result" class="screen result"><div class="trophy">🏆</div><span class="tag">MATCH COMPLETE</span><h1>Full time!</h1><div class="resultscore" id="finalscore">0/20</div><p id="resultmessage"></p><button class="primary" onclick="show('home')">BACK TO LOBBY</button><button class="ghost" onclick="begin()">PLAY ANOTHER MATCH</button></section>
+</main><footer>GOD'SGRACE ETHICS · FOOTBALL BATTLE</footer></div>
+<script>
+const BANK=[
+{c:"WORLD CUP",q:"Which country won the 2022 FIFA World Cup?",a:"Argentina",o:["France","Brazil","Argentina","Germany"]},
+{c:"CLUBS",q:"Which club is nicknamed the Red Devils?",a:"Manchester United",o:["Liverpool","Manchester United","Arsenal","Chelsea"]},
+{c:"RULES",q:"How many players from one team are on the pitch at kickoff?",a:"11",o:["9","10","11","12"]},
+{c:"LEGENDS",q:"Which Argentine star captained his country to the 2022 World Cup title?",a:"Lionel Messi",o:["Lionel Messi","Diego Maradona","Ángel Di María","Sergio Agüero"]},
+{c:"RULES",q:"What is awarded for a direct foul inside the penalty area?",a:"Penalty kick",o:["Corner kick","Penalty kick","Throw-in","Goal kick"]},
+{c:"EUROPE",q:"Which competition is contested by top European clubs?",a:"UEFA Champions League",o:["Copa América","AFCON","UEFA Champions League","Asian Cup"]},
+{c:"RULES",q:"What is the standard duration of a football match, excluding added time?",a:"90 minutes",o:["80 minutes","90 minutes","100 minutes","120 minutes"]},
+{c:"WORLD CUP",q:"Which country hosted the 2010 FIFA World Cup?",a:"South Africa",o:["Nigeria","South Africa","Spain","Mexico"]},
+{c:"TERMS",q:"What is it called when a player scores three goals in one match?",a:"Hat-trick",o:["Brace","Hat-trick","Clean sheet","Volley"]},
+{c:"POSITIONS",q:"Which position is primarily responsible for stopping shots?",a:"Goalkeeper",o:["Striker","Goalkeeper","Winger","Midfielder"]},
+{c:"AFRICA",q:"What is the national team of Nigeria commonly called?",a:"Super Eagles",o:["Black Stars","Super Eagles","Indomitable Lions","Atlas Lions"]},
+{c:"AFRICA",q:"Which country won AFCON 2023 (played in 2024)?",a:"Ivory Coast",o:["Nigeria","Senegal","Ivory Coast","Egypt"]},
+{c:"ENGLAND",q:"Which English club plays its home matches at Anfield?",a:"Liverpool",o:["Everton","Liverpool","Manchester City","Tottenham"]},
+{c:"ENGLAND",q:"What is the name of Arsenal's home stadium?",a:"Emirates Stadium",o:["Old Trafford","Stamford Bridge","Emirates Stadium","Anfield"]},
+{c:"SPAIN",q:"Which two clubs contest El Clásico?",a:"Real Madrid and Barcelona",o:["Sevilla and Valencia","Real Madrid and Barcelona","Atlético and Getafe","Betis and Málaga"]},
+{c:"ITALY",q:"Which city is home to AC Milan and Inter Milan?",a:"Milan",o:["Rome","Turin","Milan","Naples"]},
+{c:"GERMANY",q:"Which club is famously based in Munich?",a:"Bayern Munich",o:["Borussia Dortmund","Bayern Munich","RB Leipzig","Werder Bremen"]},
+{c:"PLAYERS",q:"Cristiano Ronaldo is from which country?",a:"Portugal",o:["Spain","Brazil","Portugal","Argentina"]},
+{c:"PLAYERS",q:"Kylian Mbappé represents which country internationally?",a:"France",o:["Belgium","France","Senegal","Morocco"]},
+{c:"PLAYERS",q:"Erling Haaland is known for playing as what position?",a:"Striker",o:["Goalkeeper","Defender","Striker","Full-back"]},
+{c:"PLAYERS",q:"Mohamed Salah is from which country?",a:"Egypt",o:["Algeria","Egypt","Tunisia","Ghana"]},
+{c:"PLAYERS",q:"Which Brazilian player is widely known as Neymar?",a:"Neymar Jr.",o:["Neymar Jr.","Rivaldo","Kaká","Ronaldinho"]},
+{c:"EUROPE",q:"Which country won UEFA Euro 2024?",a:"Spain",o:["England","France","Spain","Germany"]},
+{c:"WORLD CUP",q:"How often is the men's FIFA World Cup normally held?",a:"Every four years",o:["Every two years","Every three years","Every four years","Every five years"]},
+{c:"RULES",q:"What does a red card mean?",a:"The player is sent off",o:["A warning only","The player is sent off","A goal is awarded","A substitution is required"]},
+{c:"RULES",q:"Which official keeps track of added time?",a:"The referee",o:["The captain","The referee","The goalkeeper","The coach"]},
+{c:"TERMS",q:"What is a clean sheet?",a:"Conceding no goals",o:["Scoring no goals","Conceding no goals","Winning by five goals","A match without fouls"]},
+{c:"POSITIONS",q:"Which players usually operate closest to the opponent's goal?",a:"Forwards",o:["Defenders","Forwards","Goalkeepers","Centre-backs"]},
+{c:"WORLD CUP",q:"Which nation won the 2018 FIFA World Cup?",a:"France",o:["Croatia","France","Germany","Brazil"]},
+{c:"WORLD CUP",q:"Which country won the 2014 FIFA World Cup?",a:"Germany",o:["Argentina","Germany","Brazil","Netherlands"]},
+{c:"AFRICA",q:"Which country is nicknamed the Black Stars?",a:"Ghana",o:["Ghana","Nigeria","Cameroon","South Africa"]},
+{c:"AFRICA",q:"Which country is nicknamed the Atlas Lions?",a:"Morocco",o:["Morocco","Egypt","Mali","Tanzania"]},
+{c:"CLUBS",q:"Which club is associated with the slogan 'You'll Never Walk Alone'?",a:"Liverpool",o:["Chelsea","Liverpool","Arsenal","Leeds United"]},
+{c:"CLUBS",q:"Which club is known as the Old Lady in Italian football?",a:"Juventus",o:["Roma","Juventus","Napoli","Lazio"]},
+{c:"CLUBS",q:"Which French club plays at the Parc des Princes?",a:"Paris Saint-Germain",o:["Lyon","Marseille","Paris Saint-Germain","Monaco"]},
+{c:"TERMS",q:"What is a brace in football?",a:"Two goals by one player",o:["Two goals by one player","Three goals by one player","A penalty save","A defensive block"]},
+{c:"RULES",q:"Can a player be offside directly from a goal kick?",a:"No",o:["Yes","No","Only in extra time","Only inside the box"]},
+{c:"RULES",q:"Which restart is used when the ball completely crosses the touchline?",a:"Throw-in",o:["Corner","Throw-in","Penalty","Goal kick"]},
+{c:"TOURNAMENTS",q:"AFCON is the major national-team tournament for which continent?",a:"Africa",o:["Asia","Africa","Europe","South America"]},
+{c:"TOURNAMENTS",q:"Copa América is associated with which confederation?",a:"CONMEBOL",o:["UEFA","AFC","CONMEBOL","CAF"]},
+{c:"PLAYERS",q:"Which position is usually identified by the number 1 shirt?",a:"Goalkeeper",o:["Striker","Goalkeeper","Winger","Midfielder"]},
+{c:"PLAYERS",q:"Who is nicknamed 'The Egyptian King' by many football fans?",a:"Mohamed Salah",o:["Sadio Mané","Mohamed Salah","Riyad Mahrez","Victor Osimhen"]},
+{c:"PLAYERS",q:"Which country does Victor Osimhen represent?",a:"Nigeria",o:["Nigeria","Ghana","Benin","Cameroon"]},
+{c:"PLAYERS",q:"Which player is known as CR7?",a:"Cristiano Ronaldo",o:["Cristiano Ronaldo","Lionel Messi","Luis Suárez","Karim Benzema"]},
+{c:"HISTORY",q:"What is the governing body of world football called?",a:"FIFA",o:["FIFA","IOC","CAF","IFAB"]},
+{c:"HISTORY",q:"What does VAR stand for?",a:"Video Assistant Referee",o:["Virtual Action Review","Video Assistant Referee","Verified Attack Replay","Video Arena Rules"]},
+{c:"STADIUMS",q:"Wembley Stadium is in which city?",a:"London",o:["Manchester","London","Liverpool","Birmingham"]},
+{c:"STADIUMS",q:"The Maracanã is a famous stadium in which city?",a:"Rio de Janeiro",o:["São Paulo","Rio de Janeiro","Brasília","Salvador"]},
+{c:"TACTICS",q:"How many defenders are in a traditional 4-4-2 formation?",a:"4",o:["2","3","4","5"]},
+{c:"TACTICS",q:"In football, what does a hat-trick mean?",a:"Three goals by one player",o:["Two assists","Three goals by one player","Three yellow cards","Three penalty saves"]},
+{c:"CLUBS",q:"Which English club is based at Stamford Bridge?",a:"Chelsea",o:["Chelsea","West Ham","Arsenal","Fulham"]},
+{c:"CLUBS",q:"Which club is nicknamed the Citizens?",a:"Manchester City",o:["Manchester City","Manchester United","Newcastle","Aston Villa"]},
+{c:"EUROPE",q:"Which country is associated with the Bundesliga?",a:"Germany",o:["Germany","France","Portugal","Netherlands"]},
+{c:"EUROPE",q:"Which country is associated with Serie A?",a:"Italy",o:["Spain","Italy","England","Germany"]},
+{c:"EUROPE",q:"Which country is associated with La Liga?",a:"Spain",o:["Spain","Italy","France","Belgium"]},
+{c:"AFRICA",q:"Which Nigerian player is known as 'Jay-Jay'?",a:"Austin Okocha",o:["Austin Okocha","Nwankwo Kanu","John Obi Mikel","Rashidi Yekini"]},
+{c:"AFRICA",q:"Which Nigerian striker was nicknamed 'Papilo'?",a:"Nwankwo Kanu",o:["Victor Osimhen","Nwankwo Kanu","Odion Ighalo","Yakubu Aiyegbeni"]},
+{c:"PLAYERS",q:"Which goalkeeper is famous for the nickname 'The Great Wall'?",a:"Gianluigi Buffon",o:["Gianluigi Buffon","Iker Casillas","Manuel Neuer","Edwin van der Sar"]},
+{c:"PLAYERS",q:"Which player is associated with the 'Siuuu' celebration?",a:"Cristiano Ronaldo",o:["Cristiano Ronaldo","Kylian Mbappé","Erling Haaland","Antoine Griezmann"]},
+{c:"RULES",q:"How many points does a team usually earn for a league win?",a:"3",o:["1","2","3","4"]},
+{c:"RULES",q:"How many points does a team usually earn for a league draw?",a:"1",o:["0","1","2","3"]},
+{c:"TERMS",q:"What is an assist?",a:"A pass leading directly to a goal",o:["A pass leading directly to a goal","A goalkeeper's save","A foul near the box","A throw-in"]},
+{c:"TERMS",q:"What is extra time in a knockout match?",a:"Additional periods after regulation time",o:["A halftime break","Additional periods after regulation time","A penalty shootout","A substitution window"]},
+{c:"TOURNAMENTS",q:"Which trophy is awarded to the winner of the UEFA Champions League?",a:"The European Champion Clubs' Cup",o:["The FA Cup","The European Champion Clubs' Cup","The Jules Rimet Trophy","The Copa del Rey"]},
+{c:"WORLD CUP",q:"Which nation has won the most men's FIFA World Cup titles?",a:"Brazil",o:["Germany","Italy","Brazil","Argentina"]},
+{c:"WORLD CUP",q:"The Jules Rimet Trophy was the original trophy for which competition?",a:"FIFA World Cup",o:["UEFA Euro","FIFA World Cup","AFCON","Copa América"]},
+{c:"POSITIONS",q:"What is a full-back?",a:"A defender positioned wide",o:["A defender positioned wide","A central striker","A referee","A goalkeeper"]},
+{c:"POSITIONS",q:"What is a winger's typical role?",a:"Attack from wide areas",o:["Attack from wide areas","Only defend the goal","Take every throw-in","Manage substitutions"]},
+{c:"HISTORY",q:"Which organization governs football rules alongside its members?",a:"IFAB",o:["IFAB","FIFA alone","IOC","UEFA"]},
+{c:"CLUBS",q:"Which Spanish club is nicknamed Los Blancos?",a:"Real Madrid",o:["Barcelona","Real Madrid","Atlético Madrid","Valencia"]},
+{c:"CLUBS",q:"Which club is nicknamed the Yellow Submarine?",a:"Villarreal",o:["Villarreal","Real Sociedad","Getafe","Cádiz"]},
+{c:"AFRICA",q:"Which country hosted AFCON 2023?",a:"Ivory Coast",o:["Ivory Coast","Morocco","Gabon","Algeria"]},
+{c:"PLAYERS",q:"Which player is known as 'The King' in Brazilian football history, Pelé?",a:"Pelé",o:["Pelé","Zico","Romário","Ronaldo Nazário"]},
+{c:"PLAYERS",q:"Which country did Didier Drogba represent?",a:"Ivory Coast",o:["Ghana","Ivory Coast","Senegal","Cameroon"]},
+{c:"PLAYERS",q:"Which country did Samuel Eto'o represent?",a:"Cameroon",o:["Cameroon","Nigeria","Gabon","Guinea"]},
+{c:"WORLD CUP",q:"Which nation reached the 2022 World Cup final against Argentina?",a:"France",o:["France","Croatia","Brazil","Portugal"]},
+{c:"RULES",q:"What is the minimum number of players a team generally needs to continue a match under the Laws?",a:"7",o:["5","6","7","8"]},
+{c:"TACTICS",q:"What does 'pressing' mean in football tactics?",a:"Putting pressure on opponents in possession",o:["Putting pressure on opponents in possession","Sitting only in defense","Taking a corner","Passing backward only"]},
+{c:"STADIUMS",q:"Old Trafford is the home stadium of which club?",a:"Manchester United",o:["Manchester United","Manchester City","Liverpool","Everton"]},
+{c:"TOURNAMENTS",q:"Which tournament is commonly called the Euros?",a:"UEFA European Championship",o:["UEFA European Championship","Copa América","AFCON","Club World Cup"]}
+];
+let userEmail='',questions=[],qi=0,points=0,answered=false,used=new Set();
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
+$('loginform').addEventListener('submit',e=>{e.preventDefault();userEmail=$('email').value.trim();localStorage.setItem('gefb_email',userEmail);$('playername').textContent=userEmail.split('@')[0].slice(0,18);$('shortname').textContent=userEmail.split('@')[0].slice(0,10);show('home')});
+function logout(){localStorage.removeItem('gefb_email');show('login')}
+function begin(){
+ if(BANK.length<20){alert('Question bank needs at least 20 questions.');return}
+ // Avoid repeats across matches on this device until the bank is exhausted.
+ let history=JSON.parse(localStorage.getItem('gefb_used')||'[]');let fresh=BANK.map((_,i)=>i).filter(i=>!history.includes(i));
+ if(fresh.length<20){history=[];fresh=BANK.map((_,i)=>i);alert('Question cycle completed. Your question history has been reset for a fresh cycle.')}
+ questions=fresh.sort(()=>Math.random()-.5).slice(0,20).map(i=>({ ...BANK[i],id:i}));
+ history=[...history,...questions.map(q=>q.id)];localStorage.setItem('gefb_used',JSON.stringify(history));
+ qi=0;points=0;show('quiz');draw()
+}
+function draw(){
+ answered=false;let q=questions[qi];$('qcount').textContent=`QUESTION ${qi+1} / 20`;$('scoretop').textContent=`SCORE ${points}`;$('correctcount').textContent=points;$('remaining').textContent=20-qi;$('bar').style.width=(qi/20*100)+'%';$('category').textContent=q.c;$('question').textContent=q.q;$('feedback').textContent='';$('next').style.display='none';let options=[...q.o].sort(()=>Math.random()-.5),box=$('answers');box.innerHTML='';options.forEach((a,i)=>{let b=document.createElement('button');b.className='answer';b.innerHTML=`<span class="letter">${String.fromCharCode(65+i)}</span><span>${a}</span>`;b.onclick=()=>pick(b,a,q.a);box.appendChild(b)})
+}
+function pick(btn,a,correct){if(answered)return;answered=true;document.querySelectorAll('.answer').forEach(b=>{b.disabled=true;if(b.innerText.trim().endsWith(correct)||b.textContent.trim()===correct)b.classList.add('correct')});if(a===correct){points++;$('feedback').textContent='✓ Correct answer! +1 point';$('feedback').style.color='var(--green)'}else{btn.classList.add('wrong');$('feedback').textContent='✕ Correct answer: '+correct;$('feedback').style.color='#ff8983'}$('scoretop').textContent=`SCORE ${points}`;$('correctcount').textContent=points;$('next').style.display='block';$('next').textContent=qi===19?'VIEW FINAL SCORE →':'NEXT QUESTION →'}
+function nextQ(){qi++;if(qi<20)draw();else{$('bar').style.width='100%';$('finalscore').textContent=points+'/20';$('resultmessage').textContent=points>=16?'Outstanding football knowledge!':points>=11?'Solid performance. Keep it up!':'Good effort—train and come back stronger!';show('result')}}
+window.addEventListener('load',()=>{let saved=localStorage.getItem('gefb_email');if(saved){userEmail=saved;$('playername').textContent=saved.split('@')[0].slice(0,18);$('shortname').textContent=saved.split('@')[0].slice(0,10);show('home')}})
+</script></body></html>
