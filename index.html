@@ -28,6 +28,19 @@ button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:14px 16p
 footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
 @media(max-width:480px){main{padding:17px}header{padding:17px}.player-art{height:130px}}
 .multiplayer{margin-top:16px;padding:16px;background:#111923;border:1px solid var(--line);border-radius:16px}.multiplayer .row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.multiplayer button{margin-top:9px}.status{font-size:13px;color:#aeb9c8;margin:10px 0}.voice-controls{display:flex;gap:8px;flex-wrap:wrap}.voice-controls button{width:auto;flex:1}.players{font-size:13px;color:#dce5ef;line-height:1.7}.danger-note{font-size:12px;color:#ffbf9c}
+
+.dashboard{display:grid;gap:14px;margin:18px 0}
+.dashgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.statbox{background:#17212c;border:1px solid #344253;border-radius:13px;padding:14px}
+.statbox small{display:block;color:#9ba8b8;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.statbox strong{display:block;font-size:24px;margin-top:5px;color:#fff}
+.dashpanel{background:#111923;border:1px solid #303b4b;border-radius:15px;padding:15px}
+.dashpanel h2{font-size:17px;margin-bottom:10px}
+.dashlist{display:grid;gap:8px}
+.dashitem{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #293442;font-size:13px}
+.dashitem:last-child{border:0}
+.dashmuted{font-size:12px;color:#9ba8b8}
+
 </style>
 </head>
 <body><div class="app">
@@ -40,6 +53,17 @@ footer{text-align:center;color:#657182;font-size:12px;padding:0 20px 20px}
 </section>
 <section id="home" class="screen">
 <span class="tag">PLAYER LOBBY</span><h1>Welcome, <span id="playername" style="color:var(--red)">Player</span></h1><p>Ready to test your football knowledge?</p>
+<div class="dashboard">
+<div class="dashgrid">
+ <div class="statbox"><small>Coin balance</small><strong id="coinbalance">—</strong></div>
+ <div class="statbox"><small>Total score</small><strong id="totalscore">—</strong></div>
+ <div class="statbox"><small>Games played</small><strong id="gamesplayed">—</strong></div>
+ <div class="statbox"><small>Games won</small><strong id="gameswon">—</strong></div>
+</div>
+<div class="dashpanel"><h2>👤 Player profile</h2><div class="dashmuted" id="profiledetail">Loading your verified player profile…</div></div>
+<div class="dashpanel"><h2>🏆 Top players</h2><div class="dashlist" id="leaderboardlist">Loading leaderboard…</div></div>
+<div class="dashpanel"><h2>🎖️ Tournaments</h2><div class="dashlist" id="tournamentlist">Loading tournaments…</div></div>
+</div>
 <div class="question-card"><h2>⚽ Quick Quiz</h2><p>20 questions · 4 choices · one point per correct answer</p><button class="primary" onclick="begin()">START 20-QUESTION MATCH</button></div>
 <div class="multiplayer">
 <h2>🌍 Multiplayer lobby</h2>
@@ -155,6 +179,36 @@ let userEmail='',questions=[],qi=0,points=0,answered=false,used=new Set();
 const $=id=>document.getElementById(id);
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
 function playerLabel(){return player?.username ? '@'+player.username : (player?.firstName || 'Player')}
+
+async function apiGet(path){
+ const response=await fetch(SERVER_URL+path,{headers:{Authorization:'Bearer '+authToken}});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok) throw new Error(data.error||'Could not load '+path);
+ return data;
+}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+async function loadDashboard(){
+ const tasks=await Promise.allSettled([apiGet('/api/me'),apiGet('/api/wallet'),apiGet('/api/leaderboard'),apiGet('/api/tournaments')]);
+ const [me,wallet,leaders,tournaments]=tasks;
+ if(me.status==='fulfilled'&&me.value.player){
+  const p=me.value.player;
+  $('playername').textContent=(p.display_name||playerLabel()).slice(0,22);
+  $('totalscore').textContent=Number(p.total_score||0).toLocaleString();
+  $('gamesplayed').textContent=Number(p.games_played||0).toLocaleString();
+  $('gameswon').textContent=Number(p.games_won||0).toLocaleString();
+  $('profiledetail').textContent=(p.display_name||playerLabel())+' · Telegram ID '+p.telegram_id;
+ }else $('profiledetail').textContent=me.reason?.message||'Profile unavailable.';
+ $('coinbalance').textContent=wallet.status==='fulfilled'?Number(wallet.value.wallet?.coin_balance||0).toLocaleString():'Unavailable';
+ if(leaders.status==='fulfilled'){
+  const rows=leaders.value.players||[];
+  $('leaderboardlist').innerHTML=rows.length?rows.slice(0,10).map((p,i)=>'<div class="dashitem"><span>'+(i+1)+'. '+escapeHtml(p.display_name||p.username||'Player')+'</span><strong>'+Number(p.total_score||0).toLocaleString()+'</strong></div>').join(''):'No players on the leaderboard yet.';
+ }else $('leaderboardlist').textContent='Leaderboard unavailable.';
+ if(tournaments.status==='fulfilled'){
+  const rows=tournaments.value.tournaments||[];
+  $('tournamentlist').innerHTML=rows.length?rows.slice(0,8).map(t=>'<div class="dashitem"><span>'+escapeHtml(t.name||'Tournament')+'<br><small class="dashmuted">'+escapeHtml(t.status||'Status unavailable')+'</small></span><strong>'+Number(t.prize_coins||0).toLocaleString()+' coins</strong></div>').join(''):'No tournaments published yet.';
+ }else $('tournamentlist').textContent='Tournaments unavailable.';
+}
+
 async function authenticateTelegram(){
  const tg=window.Telegram?.WebApp;
  if(!tg || !tg.initData){
@@ -182,6 +236,7 @@ async function authenticateTelegram(){
   $('authmessage').textContent='Telegram account verified. Welcome to the arena!';
   $('authnotice').textContent='Signed in as '+playerLabel()+'.';
   show('home');
+  await loadDashboard();
   connectServer();
  }catch(error){
   $('authmessage').textContent='Could not sign you in.';
